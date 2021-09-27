@@ -6,6 +6,19 @@ import { UserResponse } from "../common/errors";
 
 @Resolver()
 export class UserResolver {
+	@Query(() => User, { nullable: true })
+	async me(
+		@Ctx() { em, req }: MyContext
+	) {
+		if (!req.session.userId) {
+			return null
+		}
+
+		const user = await em.findOne(User, { id: req.session.userId })
+		return user
+	}
+
+
 	@Query(() => [User])
 	async getAllUser(
 		@Ctx() { em }: MyContext
@@ -66,7 +79,7 @@ export class UserResolver {
 	@Mutation(() => UserResponse)
 	async loginUser(
 		@Arg('options') options: UserInput,
-		@Ctx() { em }: MyContext
+		@Ctx() { em, req }: MyContext
 	): Promise<UserResponse> {
 		const user = await em.findOne(User, { email: options.email.toLowerCase() })
 		if (!user) {
@@ -86,6 +99,9 @@ export class UserResolver {
 				}]
 			}
 		}
+
+		req.session.userId = user.id
+
 		return { user }
 	}
 
